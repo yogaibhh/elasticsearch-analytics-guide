@@ -21,8 +21,6 @@ cd elasticsearch-analytics-guide
 open index.html  # atau double-click index.html
 ```
 
-Atau langsung ke: **[yogaibhh.github.io/elasticsearch-analytics-guide](https://yogaibhh.github.io/elasticsearch-analytics-guide)**
-
 ## 📚 What's Inside
 
 - **Setup & Basics** - Kibana Dev Tools, shortcuts
