@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elasticsearch Data Analysis Guide</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #00D9FF;
+            --secondary: #FDB462;
+            --accent: #7C4DFF;
+            --dark: #0a0e27;
+            --darker: #060914;
+            --light: #f0f2f5;
+            --text: #e0e0e0;
+            --code-bg: #1e1e2e;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --danger: #f44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--darker);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+            overflow: hidden;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(0, 217, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(124, 77, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 20%, rgba(253, 180, 98, 0.1) 0%, transparent 50%);
+            animation: bgRotate 20s linear infinite;
+        }
+
+        @keyframes bgRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Header */
+        header {
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .logo i {
+            font-size: 2rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            left: 0;
+            top: 80px;
+            width: 280px;
+            height: calc(100vh - 80px);
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-section {
+            padding: 1.5rem;
+        }
+
+        .nav-title {
+            font-size: 0.9rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--text);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--primary);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(0, 217, 255, 0.1);
+            color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .nav-item.active::before {
+            transform: translateX(0);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+            max-width: 1200px;
+            margin-top: 80px;
+        }
+
+        .section {
+            margin-bottom: 4rem;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            position: relative;
+            padding-left: 1rem;
+        }
+
+        h2::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 80%;
+            background: linear-gradient(to bottom, var(--primary), var(--accent));
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--secondary);
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(30, 30, 46, 0.7);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.2);
+            border-color: rgba(0, 217, 255, 0.3);
+        }
+
+        /* Code Blocks */
+        .code-container {
+            position: relative;
+            margin: 1.5rem 0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--code-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .code-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .code-lang {
+            color: var(--primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary);
+            color: var(--dark);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        pre {
+            margin: 0;
+            overflow-x: auto;
+            padding: 1rem;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.95rem;
+        }
+
+        /* Interactive Features */
+        .tip-box {
+            background: rgba(0, 217, 255, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box {
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .danger-box {
+            background: rgba(244, 67, 54, 0.1);
+            border-left: 4px solid var(--danger);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(124, 77, 255, 0.1));
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: scale(1.05);
+            border-color: var(--primary);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text);
+            margin-top: 0.5rem;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            position: fixed;
+            top: 80px;
+            right: 0;
+            width: 4px;
+            height: calc(100vh - 80px);
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+
+        .progress-bar {
+            width: 100%;
+            background: linear-gradient(to bottom, var(--primary), var(--accent));
+            transition: height 0.3s ease;
+        }
+
+        /* Search */
+        .search-container {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1rem;
+            background: rgba(30, 30, 46, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+        }
+
+        /* Mobile Menu */
+        .mobile-menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                transform: translateX(-100%);
+            }
+
+            nav.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cheat Sheet */
+        .cheat-sheet {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .cheat-item {
+            background: rgba(30, 30, 46, 0.7);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .cheat-title {
+            color: var(--secondary);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .cheat-code {
+            font-family: monospace;
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .tab::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--primary);
+        }
+
+        .tab.active::after {
+            transform: scaleX(1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-search"></i>
+                <span>Elasticsearch Analytics Guide</span>
+            </div>
+            <button class="mobile-menu-toggle" onclick="toggleMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <nav id="sidebar">
+        <div class="nav-section">
+            <div class="nav-title">Getting Started</div>
+            <a href="#intro" class="nav-item active">Introduction</a>
+            <a href="#setup" class="nav-item">Setup & Console</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-title">Exploration</div>
+            <a href="#eda" class="nav-item">Exploratory Analysis</a>
+            <a href="#filtering" class="nav-item">Data Filtering</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-title">Analytics</div>
+            <a href="#aggregations" class="nav-item">Aggregations</a>
+            <a href="#advanced" class="nav-item">Advanced Analytics</a>
+            <a href="#optimization" class="nav-item">Query Optimization</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-title">Patterns</div>
+            <a href="#patterns" class="nav-item">Common Patterns</a>
+            <a href="#realworld" class="nav-item">Real-World Cases</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-title">Resources</div>
+            <a href="#troubleshooting" class="nav-item">Troubleshooting</a>
+            <a href="#cheatsheet" class="nav-item">Cheat Sheet</a>
+        </div>
+    </nav>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <main class="main-content">
+        <section id="intro" class="section">
+            <h1>Elasticsearch untuk Data Analysis</h1>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">10+</div>
+                    <div class="stat-label">Analysis Patterns</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">50+</div>
+                    <div class="stat-label">Query Examples</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">∞</div>
+                    <div class="stat-label">Possibilities</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🚀 Kenapa Elasticsearch untuk Analytics?</h3>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li>✓ Real-time analytics pada data skala besar</li>
+                    <li>✓ Aggregasi kompleks dengan performa tinggi</li>
+                    <li>✓ Full-text search capabilities</li>
+                    <li>✓ Time-series analysis yang powerful</li>
+                    <li>✓ Distributed computing untuk big data</li>
+                </ul>
+            </div>
+
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search in this guide..." id="searchInput">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+        </section>
+
+        <section id="setup" class="section">
+            <h2>BAB 1: Setup dan Persiapan Console</h2>
+            
+            <div class="card">
+                <h3>Mengakses Kibana Dev Tools</h3>
+                <p>Kibana Dev Tools adalah playground untuk menjalankan query Elasticsearch. Berikut cara aksesnya:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">URL Access</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-bash"># URL standar Kibana
+http://localhost:5601/app/dev_tools#/console
+
+# Atau klik menu "Dev Tools" di sidebar Kibana</code></pre>
+                </div>
+
+                <div class="tip-box">
+                    <strong>💡 Pro Tip:</strong> Bookmark URL Dev Tools untuk akses cepat. Anda juga bisa save query favorit di browser.
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Basic Syntax Console</h3>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab(event, 'basic-query')">Basic Query</button>
+                    <button class="tab" onclick="showTab(event, 'with-params')">With Parameters</button>
+                    <button class="tab" onclick="showTab(event, 'multi-index')">Multi-Index</button>
+                </div>
+
+                <div id="basic-query" class="tab-content active">
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-lang">JSON</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code class="language-json">GET /nama_index/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <div id="with-params" class="tab-content">
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-lang">JSON</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code class="language-json">GET /nama_index/_search
+{
+  "size": 10,
+  "from": 0,
+  "query": {
+    "match_all": {}
+  },
+  "_source": ["field1", "field2"]
+}</code></pre>
+                    </div>
+                </div>
+
+                <div id="multi-index" class="tab-content">
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-lang">JSON</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code class="language-json">GET /index1,index2,index3/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+# Atau gunakan wildcard
+GET /log-*/_search</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>⌨️ Shortcut Penting di Console</h3>
+                <div class="cheat-sheet">
+                    <div class="cheat-item">
+                        <div class="cheat-title">Execute Query</div>
+                        <div class="cheat-code">Ctrl + Enter</div>
+                    </div>
+                    <div class="cheat-item">
+                        <div class="cheat-title">Comment/Uncomment</div>
+                        <div class="cheat-code">Ctrl + /</div>
+                    </div>
+                    <div class="cheat-item">
+                        <div class="cheat-title">Auto-complete</div>
+                        <div class="cheat-code">Ctrl + Space</div>
+                    </div>
+                    <div class="cheat-item">
+                        <div class="cheat-title">Format JSON</div>
+                        <div class="cheat-code">Ctrl + I</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="eda" class="section">
+            <h2>BAB 2: Exploratory Data Analysis (EDA)</h2>
+            
+            <div class="card">
+                <h3>2.1 Melihat Struktur Index</h3>
+                <p>Langkah pertama dalam analisis adalah memahami struktur data Anda.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Mapping Structure</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Lihat mapping (struktur field)
+GET /sales_data/_mapping
+
+# Lihat settings index
+GET /sales_data/_settings
+
+# Info lengkap index
+GET /sales_data</code></pre>
+                </div>
+
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Sample Documents</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Lihat sample documents
+GET /sales_data/_search
+{
+  "size": 5,
+  "query": {
+    "match_all": {}
+  }
+}
+
+# Hitung total documents
+GET /sales_data/_count</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>2.2 Field Statistics</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Unique Values</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Cari unique values di field tertentu
+GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "unique_categories": {
+      "terms": {
+        "field": "category.keyword",
+        "size": 100
+      }
+    }
+  }
+}</code></pre>
+                </div>
+
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Date Range Analysis</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Date range analysis
+GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "date_range": {
+      "min": {
+        "field": "order_date"
+      }
+    },
+    "date_max": {
+      "max": {
+        "field": "order_date"
+      }
+    },
+    "date_stats": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "month"
+      }
+    }
+  }
+}</code></pre>
+                </div>
+
+                <div class="tip-box">
+                    <strong>💡 Best Practice:</strong> Selalu gunakan `.keyword` suffix untuk exact match pada text fields. Ini mencegah tokenization dan memberikan hasil yang akurat.
+                </div>
+            </div>
+        </section>
+
+        <section id="filtering" class="section">
+            <h2>BAB 3: Filtering Data untuk Analysis</h2>
+            
+            <div class="card">
+                <h3>3.1 Filter by Date Range</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /sales_data/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "range": {
+            "order_date": {
+              "gte": "2024-01-01",
+              "lte": "2024-12-31",
+              "format": "yyyy-MM-dd"
+            }
+          }
+        }
+      ]
+    }
+  }
+}</code></pre>
+                </div>
+
+                <div class="warning-box">
+                    <strong>⚠️ Perhatian:</strong> Gunakan filter context (bukan query context) untuk kondisi yang tidak memerlukan scoring. Ini akan meningkatkan performa query secara signifikan.
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>3.2 Multiple Filters</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Complex Filtering</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /sales_data/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "product_description": "premium quality"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "term": {
+            "status.keyword": "completed"
+          }
+        },
+        {
+          "range": {
+            "amount": {
+              "gte": 100,
+              "lte": 1000
+            }
+          }
+        },
+        {
+          "terms": {
+            "category.keyword": ["electronics", "books", "clothing"]
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "term": {
+            "is_refunded": true
+          }
+        }
+      ]
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>3.3 Advanced Filtering Techniques</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Nested & Exists</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Filter dokumen yang memiliki field tertentu
+GET /sales_data/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "exists": {
+            "field": "discount_amount"
+          }
+        }
+      ]
+    }
+  }
+}
+
+# Wildcard dan regex search
+GET /sales_data/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "wildcard": {
+            "product_code.keyword": "PROD-2024-*"
+          }
+        }
+      ]
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="aggregations" class="section">
+            <h2>BAB 4: Aggregations untuk Analysis</h2>
+            
+            <div class="card">
+                <h3>4.1 Basic Statistics</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Statistical Analysis</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "basic_stats": {
+      "stats": {
+        "field": "amount"
+      }
+    },
+    "extended_stats": {
+      "extended_stats": {
+        "field": "amount",
+        "sigma": 3
+      }
+    },
+    "percentiles": {
+      "percentiles": {
+        "field": "amount",
+        "percents": [25, 50, 75, 90, 95, 99]
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>4.2 Group By Analysis</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Revenue by Category</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "revenue_by_category": {
+      "terms": {
+        "field": "category.keyword",
+        "size": 20,
+        "order": {
+          "total_revenue": "desc"
+        }
+      },
+      "aggs": {
+        "total_revenue": {
+          "sum": {
+            "field": "amount"
+          }
+        },
+        "avg_order_value": {
+          "avg": {
+            "field": "amount"
+          }
+        },
+        "order_count": {
+          "value_count": {
+            "field": "order_id"
+          }
+        },
+        "unique_customers": {
+          "cardinality": {
+            "field": "customer_id.keyword"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>4.3 Time Series Analysis</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Monthly Trend</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "sales_over_time": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "month",
+        "min_doc_count": 0,
+        "extended_bounds": {
+          "min": "2024-01-01",
+          "max": "2024-12-31"
+        }
+      },
+      "aggs": {
+        "monthly_revenue": {
+          "sum": {
+            "field": "amount"
+          }
+        },
+        "monthly_orders": {
+          "value_count": {
+            "field": "order_id"
+          }
+        },
+        "avg_order_value": {
+          "avg": {
+            "field": "amount"
+          }
+        },
+        "cumulative_revenue": {
+          "cumulative_sum": {
+            "buckets_path": "monthly_revenue"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="advanced" class="section">
+            <h2>BAB 5: Advanced Analytics Queries</h2>
+            
+            <div class="card">
+                <h3>5.1 Moving Averages & Derivatives</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Trend Analysis</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "daily_sales": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "day"
+      },
+      "aggs": {
+        "revenue": {
+          "sum": {
+            "field": "amount"
+          }
+        },
+        "moving_avg_7d": {
+          "moving_avg": {
+            "buckets_path": "revenue",
+            "window": 7,
+            "model": "simple"
+          }
+        },
+        "revenue_growth": {
+          "derivative": {
+            "buckets_path": "revenue"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>5.2 Multi-dimensional Analysis</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Pivot Table Style</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "pivot_table": {
+      "composite": {
+        "size": 1000,
+        "sources": [
+          {
+            "category": {
+              "terms": {
+                "field": "category.keyword"
+              }
+            }
+          },
+          {
+            "region": {
+              "terms": {
+                "field": "region.keyword"
+              }
+            }
+          },
+          {
+            "month": {
+              "date_histogram": {
+                "field": "order_date",
+                "calendar_interval": "month"
+              }
+            }
+          }
+        ]
+      },
+      "aggs": {
+        "total_revenue": {
+          "sum": {
+            "field": "amount"
+          }
+        },
+        "order_count": {
+          "value_count": {
+            "field": "order_id"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>5.3 Cohort Analysis</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Customer Retention</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Customer cohort analysis
+GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "cohorts": {
+      "terms": {
+        "field": "customer_id.keyword",
+        "size": 10000
+      },
+      "aggs": {
+        "first_purchase": {
+          "min": {
+            "field": "order_date"
+          }
+        },
+        "last_purchase": {
+          "max": {
+            "field": "order_date"
+          }
+        },
+        "lifetime_value": {
+          "sum": {
+            "field": "amount"
+          }
+        },
+        "purchase_count": {
+          "value_count": {
+            "field": "order_id"
+          }
+        },
+        "avg_days_between_purchases": {
+          "bucket_script": {
+            "buckets_path": {
+              "first": "first_purchase",
+              "last": "last_purchase",
+              "count": "purchase_count"
+            },
+            "script": "(params.last - params.first) / (params.count - 1) / 86400000"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="optimization" class="section">
+            <h2>BAB 6: Query Optimization untuk Large Data</h2>
+            
+            <div class="card">
+                <h3>6.1 Performance Best Practices</h3>
+                
+                <div class="danger-box">
+                    <strong>🚫 Hindari:</strong>
+                    <ul>
+                        <li>Wildcard queries di awal string (*term)</li>
+                        <li>Deep pagination (from > 10000)</li>
+                        <li>Script queries pada large datasets</li>
+                        <li>Aggregations tanpa size: 0</li>
+                    </ul>
+                </div>
+
+                <div class="tip-box">
+                    <strong>✅ Gunakan:</strong>
+                    <ul>
+                        <li>Filter context untuk non-scoring queries</li>
+                        <li>Doc values untuk aggregations</li>
+                        <li>Scroll API atau search_after untuk large results</li>
+                        <li>Index-time optimizations</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>6.2 Efficient Filtering & Caching</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Optimized Query</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Optimized query dengan filter caching
+GET /sales_data/_search
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "status.keyword": "completed"
+          }
+        },
+        {
+          "range": {
+            "order_date": {
+              "gte": "now-30d/d",
+              "lte": "now/d"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "daily_revenue": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "day"
+      },
+      "aggs": {
+        "revenue": {
+          "sum": {
+            "field": "amount"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>6.3 Sampled Aggregations</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Sampling for Speed</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Sampling untuk dataset besar
+GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "sample": {
+      "sampler": {
+        "shard_size": 1000
+      },
+      "aggs": {
+        "category_distribution": {
+          "terms": {
+            "field": "category.keyword"
+          }
+        },
+        "avg_amount": {
+          "avg": {
+            "field": "amount"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="patterns" class="section">
+            <h2>BAB 7: Common Analysis Patterns</h2>
+            
+            <div class="card">
+                <h3>7.1 Top N Analysis</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Top Performers</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Top 10 customers dengan sub-aggregations
+GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "top_customers": {
+      "terms": {
+        "field": "customer_id.keyword",
+        "size": 10,
+        "order": {
+          "total_spent": "desc"
+        }
+      },
+      "aggs": {
+        "total_spent": {
+          "sum": {
+            "field": "amount"
+          }
+        },
+        "order_count": {
+          "value_count": {
+            "field": "order_id"
+          }
+        },
+        "avg_order_value": {
+          "avg": {
+            "field": "amount"
+          }
+        },
+        "favorite_category": {
+          "terms": {
+            "field": "category.keyword",
+            "size": 1
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>7.2 Conversion Funnel Analysis</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - E-commerce Funnel</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /user_events/_search
+{
+  "size": 0,
+  "aggs": {
+    "conversion_funnel": {
+      "filters": {
+        "filters": {
+          "1_viewed": {
+            "term": {
+              "event_type.keyword": "product_view"
+            }
+          },
+          "2_added_to_cart": {
+            "term": {
+              "event_type.keyword": "add_to_cart"
+            }
+          },
+          "3_checkout": {
+            "term": {
+              "event_type.keyword": "checkout_start"
+            }
+          },
+          "4_purchased": {
+            "term": {
+              "event_type.keyword": "purchase_complete"
+            }
+          }
+        }
+      },
+      "aggs": {
+        "unique_users": {
+          "cardinality": {
+            "field": "user_id.keyword"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>7.3 RFM Analysis</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Customer Segmentation</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /sales_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "customer_rfm": {
+      "terms": {
+        "field": "customer_id.keyword",
+        "size": 10000
+      },
+      "aggs": {
+        "recency": {
+          "max": {
+            "field": "order_date"
+          }
+        },
+        "frequency": {
+          "value_count": {
+            "field": "order_id"
+          }
+        },
+        "monetary": {
+          "sum": {
+            "field": "amount"
+          }
+        },
+        "days_since_last_purchase": {
+          "bucket_script": {
+            "buckets_path": {
+              "last_purchase": "recency"
+            },
+            "script": "(new Date().getTime() - params.last_purchase) / 86400000"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="realworld" class="section">
+            <h2>Real-World Use Cases</h2>
+            
+            <div class="card">
+                <h3>🛒 E-commerce Analytics</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Product Performance</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Analisis performa produk dengan multiple metrics
+GET /sales_data/_search
+{
+  "size": 0,
+  "query": {
+    "range": {
+      "order_date": {
+        "gte": "now-90d/d"
+      }
+    }
+  },
+  "aggs": {
+    "product_analysis": {
+      "terms": {
+        "field": "product_id.keyword",
+        "size": 50,
+        "order": {
+          "revenue": "desc"
+        }
+      },
+      "aggs": {
+        "revenue": {
+          "sum": {
+            "field": "amount"
+          }
+        },
+        "units_sold": {
+          "sum": {
+            "field": "quantity"
+          }
+        },
+        "unique_buyers": {
+          "cardinality": {
+            "field": "customer_id.keyword"
+          }
+        },
+        "return_rate": {
+          "filters": {
+            "filters": {
+              "returned": {
+                "term": {
+                  "is_returned": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📊 Marketing Campaign Analysis</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Campaign ROI</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /marketing_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "campaign_performance": {
+      "terms": {
+        "field": "campaign_id.keyword"
+      },
+      "aggs": {
+        "cost": {
+          "sum": {
+            "field": "campaign_cost"
+          }
+        },
+        "conversions": {
+          "sum": {
+            "field": "conversions"
+          }
+        },
+        "revenue": {
+          "sum": {
+            "field": "revenue_generated"
+          }
+        },
+        "roi": {
+          "bucket_script": {
+            "buckets_path": {
+              "revenue": "revenue",
+              "cost": "cost"
+            },
+            "script": "(params.revenue - params.cost) / params.cost * 100"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔍 User Behavior Analysis</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Session Analysis</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json">GET /user_sessions/_search
+{
+  "size": 0,
+  "aggs": {
+    "session_stats": {
+      "stats": {
+        "field": "session_duration_minutes"
+      }
+    },
+    "pages_per_session": {
+      "avg": {
+        "field": "pages_viewed"
+      }
+    },
+    "bounce_rate": {
+      "filters": {
+        "filters": {
+          "bounced": {
+            "term": {
+              "pages_viewed": 1
+            }
+          },
+          "all": {
+            "match_all": {}
+          }
+        }
+      }
+    },
+    "device_distribution": {
+      "terms": {
+        "field": "device_type.keyword"
+      }
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="troubleshooting" class="section">
+            <h2>BAB 8: Troubleshooting dan Best Practices</h2>
+            
+            <div class="card">
+                <h3>8.1 Debug Query Performance</h3>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span class="code-lang">JSON - Profiler</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-json"># Gunakan profiler untuk cek performa
+GET /sales_data/_search
+{
+  "profile": true,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "expensive_agg": {
+      "terms": {
+        "field": "category.keyword"
+      }
+    }
+  }
+}
+
+# Explain API untuk debug scoring
+GET /sales_data/_explain/document_id
+{
+  "query": {
+    "match": {
+      "product_name": "laptop"
+    }
+  }
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>8.2 Common Errors & Solutions</h3>
+                
+                <table style="width: 100%; color: var(--text);">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--primary);">
+                            <th style="padding: 1rem; text-align: left;">Error</th>
+                            <th style="padding: 1rem; text-align: left;">Cause</th>
+                            <th style="padding: 1rem; text-align: left;">Solution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 1rem;">Field not searchable</td>
+                            <td style="padding: 1rem;">Wrong field type</td>
+                            <td style="padding: 1rem;">Use .keyword suffix</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 1rem;">Too many buckets</td>
+                            <td style="padding: 1rem;">High cardinality</td>
+                            <td style="padding: 1rem;">Use composite aggregation</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 1rem;">Circuit breaker</td>
+                            <td style="padding: 1rem;">Memory limit</td>
+                            <td style="padding: 1rem;">Reduce query complexity</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 1rem;">Timeout</td>
+                            <td style="padding: 1rem;">Heavy query</td>
+                            <td style="padding: 1rem;">Add timeout parameter</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>8.3 Performance Checklist</h3>
+                
+                <div class="cheat-sheet">
+                    <div class="cheat-item">
+                        <div class="cheat-title">✅ Use Filter Context</div>
+                        <div class="cheat-code">Non-scoring queries should be in filter</div>
+                    </div>
+                    <div class="cheat-item">
+                        <div class="cheat-title">✅ Limit Bucket Size</div>
+                        <div class="cheat-code">Set reasonable size in terms aggregation</div>
+                    </div>
+                    <div class="cheat-item">
+                        <div class="cheat-title">✅ Use Doc Values</div>
+                        <div class="cheat-code">For aggregations on large datasets</div>
+                    </div>
+                    <div class="cheat-item">
+                        <div class="cheat-title">✅ Avoid Scripts</div>
+                        <div class="cheat-code">Pre-calculate at index time when possible</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="cheatsheet" class="section">
+            <h2>Quick Reference Cheat Sheet</h2>
+            
+            <div class="card">
+                <h3>📋 Query Templates</h3>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab(event, 'template-timeseries')">Time Series</button>
+                    <button class="tab" onclick="showTab(event, 'template-groupby')">Group By</button>
+                    <button class="tab" onclick="showTab(event, 'template-filtering')">Filtering</button>
+                </div>
+
+                <div id="template-timeseries" class="tab-content active">
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-lang">JSON Template</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code class="language-json">GET /INDEX_NAME/_search
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "range": {
+            "DATE_FIELD": {
+              "gte": "START_DATE",
+              "lte": "END_DATE"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "time_series": {
+      "date_histogram": {
+        "field": "DATE_FIELD",
+        "calendar_interval": "INTERVAL",
+        "min_doc_count": 0
+      },
+      "aggs": {
+        "metric": {
+          "AGGREGATION_TYPE": {
+            "field": "VALUE_FIELD"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <div id="template-groupby" class="tab-content">
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-lang">JSON Template</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code class="language-json">GET /INDEX_NAME/_search
+{
+  "size": 0,
+  "aggs": {
+    "group_by_field": {
+      "terms": {
+        "field": "FIELD.keyword",
+        "size": SIZE,
+        "order": {
+          "METRIC_NAME": "desc"
+        }
+      },
+      "aggs": {
+        "METRIC_NAME": {
+          "AGGREGATION_TYPE": {
+            "field": "VALUE_FIELD"
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <div id="template-filtering" class="tab-content">
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-lang">JSON Template</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code class="language-json">GET /INDEX_NAME/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "TEXT_FIELD": "SEARCH_TERM"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "term": {
+            "FIELD.keyword": "VALUE"
+          }
+        },
+        {
+          "range": {
+            "NUMERIC_FIELD": {
+              "gte": MIN_VALUE,
+              "lte": MAX_VALUE
+            }
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "term": {
+            "FIELD": "EXCLUDE_VALUE"
+          }
+        }
+      ]
+    }
+  }
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🎯 Aggregation Types Quick Reference</h3>
+                
+                <div class="cheat-sheet">
+                    <div class="cheat-item">
+                        <div class="cheat-title">Metrics</div>
+                        <div class="cheat-code">sum, avg, min, max, stats, cardinality</div>
+                    </div>
+                    <div class="cheat-item">
+                        <div class="cheat-title">Bucketing</div>
+                        <div class="cheat-code">terms, date_histogram, range, filters</div>
+                    </div>
+                    <div class="cheat-item">
+                        <div class="cheat-title">Pipeline</div>
+                        <div class="cheat-code">derivative, cumulative_sum, moving_avg</div>
+                    </div>
+                    <div class="cheat-item">
+                        <div class="cheat-title">Matrix</div>
+                        <div class="cheat-code">stats, covariance, correlation</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>💡 Pro Tips Collection</h3>
+                
+                <ul style="list-style: none; padding-left: 0;">
+                    <li>🔸 Gunakan alias untuk index management yang lebih mudah</li>
+                    <li>🔸 Set up index templates untuk konsistensi mapping</li>
+                    <li>🔸 Monitor cluster health secara regular</li>
+                    <li>🔸 Gunakan bulk API untuk indexing data besar</li>
+                    <li>🔸 Implement proper shard sizing (20-40GB per shard)</li>
+                    <li>🔸 Use time-based indices untuk time series data</li>
+                    <li>🔸 Enable slow query logging untuk debugging</li>
+                    <li>🔸 Leverage Kibana visualizations untuk quick insights</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer style="text-align: center; padding: 3rem 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 4rem;">
+            <p style="color: var(--primary);">Made with 💙 for Data Analysts</p>
+            <p style="margin-top: 1rem; opacity: 0.7;">Keep exploring, keep analyzing!</p>
+        </footer>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    
+    <script>
+        // Smooth scrolling for navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = item.getAttribute('href').substring(1);
+                const targetSection = document.getElementById(targetId);
+                
+                // Update active nav
+                document.querySelectorAll('.nav-item').forEach(navItem => {
+                    navItem.classList.remove('active');
+                });
+                item.classList.add('active');
+                
+                // Smooth scroll
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Close mobile menu if open
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.remove('active');
+                }
+            });
+        });
+
+        // Copy code functionality
+        function copyCode(button) {
+            const codeBlock = button.parentElement.nextElementSibling.querySelector('code');
+            const text = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Tab functionality
+        function showTab(evt, tabName) {
+            const tabContents = evt.target.parentElement.parentElement.querySelectorAll('.tab-content');
+            const tabs = evt.target.parentElement.querySelectorAll('.tab');
+            
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            evt.target.classList.add('active');
+        }
+
+        // Mobile menu toggle
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        // Progress bar
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById('progressBar').style.height = scrolled + '%';
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const sections = document.querySelectorAll('.section');
+            
+            sections.forEach(section => {
+                const text = section.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+            
+            if (searchTerm === '') {
+                sections.forEach(section => {
+                    section.style.display = 'block';
+                });
+            }
+        });
+
+        // Animate sections on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.card').forEach(card => {
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>
