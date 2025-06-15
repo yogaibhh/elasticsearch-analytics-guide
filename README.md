@@ -2,6 +2,11 @@
 
 > Interactive guide untuk menguasai Elasticsearch queries dalam data analytics. Dark theme, 50+ examples, siap copy-paste.
 
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge)](https://yogaibhh.github.io/elasticsearch-analytics-guide)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
+
+![Preview](https://via.placeholder.com/800x400/0a0e27/00D9FF?text=Elasticsearch+Analytics+Guide)
+
 ## ✨ Features
 
 - 🎨 **Modern Dark UI** - Animated gradients, glassmorphism effects
@@ -20,6 +25,8 @@ git clone https://github.com/yogaibhh/elasticsearch-analytics-guide.git
 cd elasticsearch-analytics-guide
 open index.html  # atau double-click index.html
 ```
+
+Atau langsung ke: **[yogaibhh.github.io/elasticsearch-analytics-guide](https://yogaibhh.github.io/elasticsearch-analytics-guide)**
 
 ## 📚 What's Inside
 
