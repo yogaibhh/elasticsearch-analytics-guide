@@ -4,8 +4,6 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 
-![Preview](https://via.placeholder.com/800x400/0a0e27/00D9FF?text=Elasticsearch+Analytics+Guide)
-
 ## ✨ Features
 
 - 🎨 **Modern Dark UI** - Animated gradients, glassmorphism effects
